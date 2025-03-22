@@ -1,13 +1,14 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use anyhow::Context;
+use base64::{engine::general_purpose, Engine as _};
 use clipboard_rs::{
     common::RustImage, Clipboard, ClipboardContext, ClipboardHandler, ClipboardWatcher,
     ClipboardWatcherContext, ContentFormat,
 };
+use image::{ColorType, ImageFormat};
 use serde::{Deserialize, Serialize};
 use std::{
     fs,
-    path::PathBuf,
     sync::Arc,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -55,6 +56,7 @@ pub struct ClipboardItem {
     html_content: Option<String>,
     rtf_content: Option<String>,
     image_path: Option<String>,
+    image_base64: Option<String>, // 添加base64编码的图片数据
     timestamp: u64,
 }
 
@@ -135,6 +137,7 @@ impl ClipboardState {
         html_content: Option<String>,
         rtf_content: Option<String>,
         image_path: Option<String>,
+        image_base64: Option<String>,
     ) -> ClipboardItem {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -148,6 +151,7 @@ impl ClipboardState {
             html_content,
             rtf_content,
             image_path,
+            image_base64,
             timestamp: now,
         }
     }
@@ -178,6 +182,7 @@ impl ClipboardStateManager {
             .path()
             .app_data_dir()
             .map_err(|e| ClipboardError::InitError(format!("无法获取应用数据目录: {}", e)))?;
+        debug!("应用数据目录: {:?}", app_data_dir);
         let images_dir = app_data_dir.join("clipboard_images");
         if !images_dir.exists() {
             fs::create_dir_all(&images_dir)
@@ -189,6 +194,7 @@ impl ClipboardStateManager {
         let mut html_content = None;
         let mut rtf_content = None;
         let mut image_path = None;
+        let mut image_base64 = None;
         let mut content_type = ClipboardContentType::Unknown;
 
         // 确定内容类型
@@ -208,6 +214,19 @@ impl ClipboardStateManager {
                     // 保存图片
                     match image.save_to_path(image_path_full.to_str().unwrap()) {
                         Ok(_) => {
+                            // 创建base64编码
+                            match image.encode_image(ColorType::Rgb8, ImageFormat::Png) {
+                                Ok(png_data) => {
+                                    // 将RustImageBuffer转换为Vec<u8>
+                                    let png_bytes = png_data.get_bytes();
+                                    image_base64 =
+                                        Some(general_purpose::STANDARD.encode(&png_bytes));
+                                }
+                                Err(e) => {
+                                    error!("转换图片为PNG格式失败: {}", e);
+                                }
+                            }
+
                             image_path = Some(file_name);
                             text = "[图片内容]".to_string();
                             debug!("图片已保存到: {:?}", image_path);
@@ -257,7 +276,14 @@ impl ClipboardStateManager {
 
         // 创建新条目
         let mut state = self.state.lock().await;
-        let new_item = state.create_item(text, content_type, html_content, rtf_content, image_path);
+        let new_item = state.create_item(
+            text,
+            content_type,
+            html_content,
+            rtf_content,
+            image_path,
+            image_base64,
+        );
 
         // 计算内容哈希值检查是否变化
         let hash = state.calculate_hash(&new_item);
@@ -332,13 +358,35 @@ fn get_clipboard_content() -> Result<ClipboardItem, String> {
     let mut html_content = None;
     let mut rtf_content = None;
     let mut image_path = None;
+    let mut image_base64 = None;
     let mut content_type = ClipboardContentType::Unknown;
 
     // 确定内容类型并获取相应内容
     if ctx.has(ContentFormat::Image) {
         content_type = ClipboardContentType::Image;
-        text = "[图片内容]".to_string();
-        // 注意: 这里我们不保存图片，因为这只是读取当前内容
+
+        // 尝试获取和编码图片数据
+        match ctx.get_image() {
+            Ok(image) => {
+                // 转换为base64
+                match image.encode_image(ColorType::Rgb8, ImageFormat::Png) {
+                    Ok(png_data) => {
+                        // 将RustImageBuffer转换为Vec<u8>
+                        let png_bytes = png_data.get_bytes();
+                        image_base64 = Some(general_purpose::STANDARD.encode(&png_bytes));
+                        text = "[图片内容]".to_string();
+                    }
+                    Err(e) => {
+                        error!("转换图片为PNG格式失败: {}", e);
+                        text = "[图片内容-处理失败]".to_string();
+                    }
+                }
+            }
+            Err(e) => {
+                error!("读取图片失败: {}", e);
+                text = "[图片内容-读取失败]".to_string();
+            }
+        }
     } else if ctx.has(ContentFormat::Rtf) {
         content_type = ClipboardContentType::RichText;
         rtf_content = ctx.get_rich_text().ok();
@@ -373,6 +421,7 @@ fn get_clipboard_content() -> Result<ClipboardItem, String> {
         html_content,
         rtf_content,
         image_path,
+        image_base64,
         timestamp: now,
     })
 }
@@ -391,6 +440,16 @@ fn get_clipboard_image(app: tauri::AppHandle, image_name: String) -> Result<Vec<
     }
 
     fs::read(image_path).map_err(|e| format!("读取图片文件失败: {}", e))
+}
+
+// 获取图片的base64编码
+#[tauri::command]
+fn get_clipboard_image_base64(app: tauri::AppHandle, image_name: String) -> Result<String, String> {
+    // 先获取图片二进制数据
+    let image_data = get_clipboard_image(app, image_name)?;
+
+    // 转换为base64编码
+    Ok(general_purpose::STANDARD.encode(&image_data))
 }
 
 // 设置剪贴板内容
@@ -548,6 +607,7 @@ pub fn run() {
             clear_clipboard_history,
             set_max_history_size,
             get_clipboard_image,
+            get_clipboard_image_base64,
         ])
         .run(tauri::generate_context!())
         .context("运行Tauri应用失败")

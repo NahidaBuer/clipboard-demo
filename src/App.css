@@ -19,13 +19,59 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+
+  /* 浅色模式变量 */
+  --primary-color: #2f95e4;
+  --secondary-color: #e6e6e6;
+  --text-color: #333;
+  --text-secondary-color: #666;
+  --text-tertiary-color: #888;
+  --bg-color: #f7f7f7;
+  --bg-container: #ffffff;
+  --bg-secondary: #ffffff;
+  --border-color: #ddd;
+  --hover-color: #eef5fc;
+  --selected-color: #e1f0ff;
+  --box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  --button-bg: var(--primary-color);
+  --button-text: #ffffff;
+  --button-hover: #2378c3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f6f6f6;
+    background-color: #1a1a1a;
+    
+    /* 深色模式变量 */
+    --primary-color: #4fa8f5;
+    --secondary-color: #444444;
+    --text-color: #e0e0e0;
+    --text-secondary-color: #b0b0b0;
+    --text-tertiary-color: #909090;
+    --bg-color: #2a2a2a;
+    --bg-container: #2c2c2c;
+    --bg-secondary: #323232;
+    --border-color: #444;
+    --hover-color: #3a3a3a;
+    --selected-color: #2d4055;
+    --box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+    --button-bg: #4fa8f5;
+    --button-text: #ffffff;
+    --button-hover: #3b88d5;
+  }
 }
 
 .container {
-  margin: 0;
+  max-width: 1200px;
+  margin: 0 auto;
   padding: 2rem;
-  text-align: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
+    Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  color: var(--text-color);
+  background-color: var(--bg-container);
+  box-shadow: var(--box-shadow);
+  border-radius: 10px;
 }
 
 .logo {
@@ -46,100 +92,201 @@
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--primary-color);
   text-decoration: inherit;
 }
 
 a:hover {
-  color: #535bf2;
+  color: var(--button-hover);
 }
 
 h1 {
+  text-align: center;
   margin-bottom: 2rem;
-  color: #333;
+  color: var(--primary-color);
 }
 
 h2 {
-  margin: 1.5rem 0;
-  color: #666;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.5rem;
+  margin-top: 0;
+  color: var(--primary-color);
 }
 
-/* 剪贴板控制区域 */
-.clipboard-controls {
-  margin-bottom: 2rem;
+/* 布局 */
+.app-layout {
   display: flex;
-  justify-content: center;
-  gap: 1rem;
+  gap: 2rem;
+  margin-top: 2rem;
 }
 
-.clipboard-controls button {
-  background-color: #4a7dff;
-  color: white;
+.clipboard-history {
+  flex: 1;
+  max-width: 40%;
+}
+
+.content-preview {
+  flex: 1.5;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  box-shadow: var(--box-shadow);
+}
+
+/* 操作按钮 */
+.clipboard-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.clipboard-controls button,
+.preview-actions button {
+  background-color: var(--button-bg);
+  color: var(--button-text);
   border: none;
+  padding: 0.5rem 1rem;
   border-radius: 4px;
-  padding: 0.6rem 1.2rem;
-  font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
-.clipboard-controls button:hover {
-  background-color: #3a6ae0;
+.clipboard-controls button:hover,
+.preview-actions button:hover {
+  background-color: var(--button-hover);
 }
 
-/* 剪贴板历史记录区域 */
-.clipboard-history {
-  max-width: 800px;
-  margin: 0 auto;
-  text-align: left;
-}
-
+/* 剪贴板项目列表 */
 .clipboard-items {
   list-style: none;
   padding: 0;
   margin: 0;
+  max-height: 70vh;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
 }
 
 .clipboard-item {
-  background-color: #f9f9f9;
-  border-radius: 6px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: transform 0.2s, box-shadow 0.2s;
+  padding: 0.75rem;
+  border-bottom: 1px solid var(--border-color);
   cursor: pointer;
-  position: relative;
+  transition: background-color 0.2s;
 }
 
 .clipboard-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  background-color: #f2f8ff;
+  background-color: var(--hover-color);
+}
+
+.clipboard-item.selected {
+  background-color: var(--selected-color);
+  border-left: 3px solid var(--primary-color);
 }
 
 .clipboard-content-type {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
   font-size: 0.8rem;
-  background-color: #e0e7ff;
-  color: #4a5568;
-  padding: 0.2rem 0.6rem;
-  border-radius: 3px;
+  color: var(--text-secondary-color);
+  margin-bottom: 0.25rem;
 }
 
-.clipboard-content {
-  font-size: 1rem;
-  word-break: break-word;
+.clipboard-summary {
   margin-bottom: 0.5rem;
-  white-space: pre-wrap;
-  padding-right: 4rem;
+  word-break: break-all;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  color: var(--text-color);
 }
 
 .clipboard-timestamp {
   font-size: 0.8rem;
-  color: #888;
+  color: var(--text-tertiary-color);
   text-align: right;
+}
+
+/* 内容预览 */
+.preview-content {
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: var(--bg-color);
+  border-radius: 4px;
+  min-height: 200px;
+  max-height: 60vh;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+}
+
+/* 图片预览 */
+.image-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.image-preview img {
+  max-width: 100%;
+  max-height: 50vh;
+  object-fit: contain;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+.image-preview button {
+  margin-top: 10px;
+  background-color: var(--button-bg);
+  color: var(--button-text);
+}
+
+/* HTML预览 */
+.html-preview iframe {
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  width: 100%;
+}
+
+/* RTF预览 */
+.rtf-preview pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding: 1rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-color);
+}
+
+/* 内容详情 */
+.content-details {
+  font-size: 0.9rem;
+  color: var(--text-secondary-color);
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.content-details p {
+  margin: 0.25rem 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .app-layout {
+    flex-direction: column;
+  }
+  
+  .clipboard-history {
+    max-width: 100%;
+  }
+  
+  .clipboard-items {
+    max-height: 40vh;
+  }
 }
 
 input,
@@ -150,22 +297,26 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  color: #0f0f0f;
-  background-color: #ffffff;
-  transition: border-color 0.25s;
-  box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+  color: var(--text-color);
+  background-color: var(--bg-secondary);
+  transition: border-color 0.25s, background-color 0.25s;
+  box-shadow: var(--box-shadow);
 }
 
 button {
   cursor: pointer;
+  background-color: var(--button-bg);
+  color: var(--button-text);
 }
 
 button:hover {
-  border-color: #396cd8;
+  border-color: var(--primary-color);
+  background-color: var(--button-hover);
 }
+
 button:active {
-  border-color: #396cd8;
-  background-color: #e8e8e8;
+  border-color: var(--primary-color);
+  background-color: var(--hover-color);
 }
 
 input,
@@ -173,26 +324,14 @@ button {
   outline: none;
 }
 
-#greet-input {
-  margin-right: 5px;
+input {
+  border: 1px solid var(--border-color);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color: #f6f6f6;
-    background-color: #2f2f2f;
-  }
+input:focus {
+  border-color: var(--primary-color);
+}
 
-  a:hover {
-    color: #24c8db;
-  }
-
-  input,
-  button {
-    color: #ffffff;
-    background-color: #0f0f0f98;
-  }
-  button:active {
-    background-color: #0f0f0f69;
-  }
+#greet-input {
+  margin-right: 5px;
 }
